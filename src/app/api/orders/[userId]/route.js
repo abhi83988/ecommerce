@@ -3,7 +3,7 @@ import { getConnection } from "../../../../lib/db";
 
 export async function GET(req, { params }) {
   try {
-    const { userId } = params;
+    const { userId } = await params;
     const db = getConnection(); // Pool instance
 
     // Fetch all orders for this user

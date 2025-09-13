@@ -5,6 +5,7 @@ import { useSession } from "next-auth/react";
 import Navbar from "@/components/Navbar";
 import CustomerCheckout from "@/components/CustomerCheckout";
 import CustomerFooter from "@/components/CustomerFooter";
+import Loader from "@/components/Loader"; // 👈 import loader
 
 export default function CartPage() {
   const { data: session, status } = useSession();
@@ -14,12 +15,6 @@ export default function CartPage() {
   const [showCheckout, setShowCheckout] = useState(false);
 
   const userId = session?.user?.id;
-
-   useEffect(()=>{
-     if(cartItems){
-      console.log(cartItems)
-     }
-  },[cartItems])
 
   // Fetch cart items
   async function fetchCart() {
@@ -52,51 +47,75 @@ export default function CartPage() {
     0
   );
 
+  // 🟢 Remove item handler
+  async function removeItem(productId) {
+    try {
+      // This assumes you have /api/cart/remove route that takes userId + productId
+      const res = await fetch(`/api/cart/remove`, {
+        method: "POST", // or DELETE if your route supports it
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, productId }),
+      });
+      if (res.ok) {
+        await fetchCart(); // refresh cart after remove
+      } else {
+        const err = await res.json();
+        alert("Error: " + err.error);
+      }
+    } catch (err) {
+      console.error("Remove error:", err);
+    }
+  }
+
+  // 🟢 Loader for session
   if (status === "loading")
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-lg">Loading session...</p>
+        <Loader />
       </div>
     );
+
   if (!session)
     return (
       <div className="flex justify-center items-center h-screen">
         <p className="text-lg">Please login to view your cart.</p>
       </div>
     );
+
+  // 🟢 Loader for cart data
   if (loading)
     return (
       <div className="flex justify-center items-center h-screen">
-        <p className="text-lg">Loading cart...</p>
+        <Loader />
       </div>
     );
-if (cartItems.length === 0)
-  return (
-    <div>
-      <Navbar/>
-    <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center text-center p-6">
-      <img
-        src="https://cdn-icons-png.flaticon.com/512/11329/11329060.png" // ✅ You can replace with your custom empty-cart image
-        alt="Empty Cart"
-        className="w-40 h-40 mb-6 opacity-80"
-      />
-      <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
-        Your cart is empty 
-      </h2>
-      <p className="text-gray-600 mb-6 max-w-md">
-        Looks like you haven’t added anything yet. Explore our products and add
-        them to your cart.
-      </p>
-      <a
-        href="/customer/products"
-        className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow transition"
-      >
-        🛍️ Start Shopping
-      </a>
-    </div>
-    
-    </div>
-  );
+
+  if (cartItems.length === 0)
+    return (
+      <div>
+        <Navbar />
+        <div className="min-h-screen bg-gray-50 flex flex-col justify-center items-center text-center p-6 ">
+          <img
+            src="https://cdn-icons-png.flaticon.com/512/11329/11329060.png"
+            alt="Empty Cart"
+            className="w-40 h-40 mb-6 opacity-80"
+          />
+          <h2 className="text-2xl md:text-3xl font-bold text-gray-800 mb-2">
+            Your cart is empty
+          </h2>
+          <p className="text-gray-600 mb-6 max-w-md">
+            Looks like you haven’t added anything yet. Explore our products and add
+            them to your cart.
+          </p>
+          <a
+            href="/customer/products"
+            className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-semibold shadow transition"
+          >
+            🛍️ Start Shopping
+          </a>
+        </div>
+      </div>
+    );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -140,6 +159,14 @@ if (cartItems.length === 0)
                   />
                 </div>
               </div>
+
+              {/* 🟢 Remove Button */}
+              <button
+                onClick={() => removeItem(item.product_id)} // pass product_id for remove
+                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg font-semibold transition mt-3 sm:mt-0"
+              >
+                Remove
+              </button>
             </div>
           ))}
         </div>
@@ -166,7 +193,7 @@ if (cartItems.length === 0)
           />
         )}
       </div>
-      < CustomerFooter />
+      <CustomerFooter  className="fixed bottom-0 left-0 w-full" />
     </div>
   );
 }
